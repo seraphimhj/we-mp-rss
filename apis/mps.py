@@ -366,18 +366,13 @@ async def update_mps(
                     message="请不要频繁更新操作",
                     data={"time_span":time_span}
                 )
-        result=[]    
-        def UpArt(mp):
-            from core.wx import WxGather
-            wx=WxGather().Model()
-            wx.get_Articles(mp.faker_id,Mps_id=mp.id,Mps_title=mp.mp_name,CallBack=UpdateArticle,start_page=start_page,MaxPage=end_page)
-            result=wx.articles
-        import threading
-        threading.Thread(target=UpArt,args=(mp,)).start()
+        from core.queue import TaskQueue
+        from core.wx import WxGather
+        TaskQueue.add_task(WxGather().Model().get_Articles, mp.faker_id, Mps_id=mp.id, Mps_title=mp.mp_name, CallBack=UpdateArticle, start_page=start_page, MaxPage=end_page, task_name=mp.mp_name)
         return success_response({
             "time_span":time_span,
-            "list":result,
-            "total":len(result),
+            "list":[],
+            "total":0,
             "mps":mp
         })
     except Exception as e:
