@@ -53,12 +53,13 @@ def CallBackNotice(data=None, ext_data=None):
         return
 
     img_path = WX_API.QRcode()['code']
-    rss_domain = str(cfg.get("rss.base_url", ""))
+    rss_domain = str(cfg.get("rss.base_url", "")).rstrip("/")
     url = rss_domain + str(img_path)
-    url = image_to_base64("./static/wx_qrcode.png")
     text = f"- 服务名：{cfg.get('server.name', '')}\n"
     text += f"- 发送时间：{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))}"
     if WX_API.GetHasCode():
-        text += f"![描述]({url})"
-        text += f"\n- 请使用微信扫描二维码进行授权"
+        if rss_domain:
+            text += f"\n- [点击打开二维码，用微信扫码授权]({url})"
+        else:
+            text += "\n- 请访问系统页面扫码授权（未配置 rss.base_url，无法生成直达链接）"
     sys_notice(text, str(cfg.get("server.code_title", "WeRss授权过期,扫码授权")))
