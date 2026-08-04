@@ -6,6 +6,11 @@ from driver.success import Success
 from tools.base64_tools import image_to_base64
 import time
 
+# 通知节流：授权过期时每条失败的采集都会调用本函数（一轮全量任务可达上百次），
+# 每 4 小时最多发一次即可。进程内存计数，重启后重新计时。
+_NOTICE_INTERVAL = 4 * 3600
+_last_notice_at = 0.0
+
 
 def send_wx_code(title: str = "", url: str = ""):
     """发送微信授权过期通知
@@ -13,6 +18,12 @@ def send_wx_code(title: str = "", url: str = ""):
     始终发送过期通知。当 send_code=True 时，尝试获取二维码并附带在通知中；
     当 send_code=False 时，只发送文字通知（不含二维码）。
     """
+    global _last_notice_at
+    now = time.time()
+    if now - _last_notice_at < _NOTICE_INTERVAL:
+        return
+    _last_notice_at = now
+
     # 始终发送过期通知（不依赖 send_code 配置）
     text = f"- 服务名：{cfg.get('server.name', '')}\n"
     text += f"- 发送时间：{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))}\n"

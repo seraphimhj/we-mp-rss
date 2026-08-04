@@ -927,6 +927,14 @@ class WeChatAPI:
     def check_lock(self, timeout: int = 300) -> bool:
         if not os.path.exists(self.wx_login_url):
                 return False
+        # 二维码文件超过 timeout 秒视为陈旧锁：登录流程早已死亡，删除文件放行，
+        # 否则授权过期后的重试和通知会被永久拦截（2026-08 断档 4 天的根因）
+        try:
+            if time.time() - os.path.getmtime(self.wx_login_url) > timeout:
+                os.remove(self.wx_login_url)
+                return False
+        except OSError:
+            return False
         return True
     def set_lock(self):
         """创建锁定文件，写入当前进程PID和时间戳"""
